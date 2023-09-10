@@ -5,29 +5,26 @@
 #include "GenericPlatform/GenericPlatformDriver.h"
 
 
-FString UUnrealZFunctionLibrary::GetCPUBrandName()
+void UUnrealZFunctionLibrary::GetMemoryInfo(int64& TotalMemoryPhysicalByte, int64& AvailableMemoryPhysicalByte)
 {
-	return FPlatformMisc::GetCPUBrand();
+	TotalMemoryPhysicalByte = FPlatformMemory::GetStats().TotalPhysical;
+	AvailableMemoryPhysicalByte = FPlatformMemory::GetStats().AvailablePhysical;
 }
 
-FString UUnrealZFunctionLibrary::GetCPUChipsetName()
+void UUnrealZFunctionLibrary::GetDiskInfo(int64& TotalSizeBytes, int64& FreeSizeBytes, FString DefaultDiskPath)
 {
-	return FPlatformMisc::GetCPUChipset();
-}
+	FString RootAppDir = (DefaultDiskPath.Equals(TEXT(""))) ? FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()) : DefaultDiskPath;
+	RootAppDir = RootAppDir.Replace(TEXT("/"), TEXT("\\"));
+	UE_LOG(LogTemp, Warning, TEXT("Root Dir %s"), *RootAppDir);
 
-FString UUnrealZFunctionLibrary::GetCPUVendorName()
-{
-	return FPlatformMisc::GetCPUVendor();
-}
+	uint64 TotalNumberOfBytes;
+	uint64 NumberOfFreeBytes;
 
-FString UUnrealZFunctionLibrary::GetGPUBrandName()
-{
-	return FPlatformMisc::GetPrimaryGPUBrand();
-}
-
-int32 UUnrealZFunctionLibrary::GetCPUCores()
-{
-	return FPlatformMisc::NumberOfCores();
+	if(FPlatformMisc::GetDiskTotalAndFreeSpace(RootAppDir, TotalNumberOfBytes,NumberOfFreeBytes))
+	{
+		TotalSizeBytes = TotalNumberOfBytes;
+		FreeSizeBytes = NumberOfFreeBytes;
+	}
 }
 
 void UUnrealZFunctionLibrary::GetOSVersionsInfo(FString& OsVersionLabel, FString& OsSubVersionLabel)
@@ -43,4 +40,15 @@ void UUnrealZFunctionLibrary::GetGPUDriverInfo(FString& DeviceDescription, FStri
 	Provider = GPUDriverInfo.ProviderName;
 	DriverVersion = GPUDriverInfo.UserDriverVersion;
 	DriverDate = GPUDriverInfo.DriverDate;
+
+}
+
+bool UUnrealZFunctionLibrary::IsGamePadConnected()
+{
+	const auto genericApplication = FSlateApplication::Get().GetPlatformApplication();
+	if (genericApplication.Get() != nullptr && genericApplication->IsGamepadAttached())
+	{
+		return true;
+	}
+	return false;
 }
